@@ -15,7 +15,11 @@ https://github.com/KennyWuLee/nofolder/releases
 
 # build
 
-`python setup.py bdist_egg`
+This fork targets Deluge 2.x on Python 3 (including Python 3.12).
+
+Build the plugin egg with:
+
+`python3 setup.py bdist_egg`
 
 # forum
 http://forum.deluge-torrent.org/viewtopic.php?f=9&t=51839
