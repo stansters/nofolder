@@ -64,7 +64,7 @@ class Core(CorePluginBase):
     def update(self):
         pass
 
-    def post_torrent_add(self, torrent_id):
+    def post_torrent_add(self, torrent_id, from_state=False):
         #if not self.torrent_manager.session_started or (not (self.config['dontaddfolder'] or self.config['createfolder'])):
         if not (self.config['dontaddfolder'] or self.config['createfolder']):
             return
@@ -72,6 +72,9 @@ class Core(CorePluginBase):
         torrent.pause()
         status_keys = ["files", "save_path", "name"]
         status = torrent.get_status(status_keys)
+        if not status["files"]:
+            torrent.resume()
+            return
         if self.config['dontaddfolder'] and re.match('.*/.*', status["files"][0]["path"]):
             namechanges = []
             for i in range(0, len(status["files"])):

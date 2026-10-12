@@ -37,21 +37,30 @@
 #    statement from all source files in the program, then also delete it here.
 #
 
-import gtk
+try:
+    from gi.repository import Gtk
+except ImportError:
+    Gtk = None
 
 from deluge.log import LOG as log
 from deluge.ui.client import client
-from deluge.plugins.pluginbase import GtkPluginBase
+try:
+    from deluge.plugins.pluginbase import Gtk3PluginBase as GtkPluginBase
+except ImportError:
+    from deluge.plugins.pluginbase import GtkPluginBase
 import deluge.component as component
 import deluge.common
 
-from common import get_resource
+from .common import get_resource
 
 class GtkUI(GtkPluginBase):
     def enable(self):
-        self.glade = gtk.glade.XML(get_resource("config.glade"))
+        if Gtk is None:
+            raise RuntimeError("NoFolder requires GTK 3 for Deluge 2.x")
+        self.builder = Gtk.Builder()
+        self.builder.add_from_file(get_resource("config.glade"))
 
-        component.get("Preferences").add_page("NoFolder", self.glade.get_widget("prefs_box"))
+        component.get("Preferences").add_page("NoFolder", self.builder.get_object("prefs_box"))
         component.get("PluginManager").register_hook("on_apply_prefs", self.on_apply_prefs)
         component.get("PluginManager").register_hook("on_show_prefs", self.on_show_prefs)
 
@@ -63,8 +72,8 @@ class GtkUI(GtkPluginBase):
     def on_apply_prefs(self):
         log.debug("applying prefs for NoFolder")
         config = {
-            "dontaddfolder": self.glade.get_widget("dontaddfolder_checkbutton").get_active(),
-            "createfolder": self.glade.get_widget("createfolder_checkbutton").get_active()
+            "dontaddfolder": self.builder.get_object("dontaddfolder_checkbutton").get_active(),
+            "createfolder": self.builder.get_object("createfolder_checkbutton").get_active()
         }
         client.nofolder.set_config(config)
 
@@ -73,5 +82,5 @@ class GtkUI(GtkPluginBase):
 
     def cb_get_config(self, config):
         "callback for on show_prefs"
-        self.glade.get_widget("dontaddfolder_checkbutton").set_active(config["dontaddfolder"])
-        self.glade.get_widget("createfolder_checkbutton").set_active(config["createfolder"])
+        self.builder.get_object("dontaddfolder_checkbutton").set_active(config["dontaddfolder"])
+        self.builder.get_object("createfolder_checkbutton").set_active(config["createfolder"])

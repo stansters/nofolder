@@ -38,5 +38,5 @@
 #
 
 def get_resource(filename):
-    import pkg_resources, os
-    return pkg_resources.resource_filename("nofolder", os.path.join("data", filename))
+    import os
+    return os.path.join(os.path.dirname(__file__), "data", filename)
