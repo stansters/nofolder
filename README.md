@@ -11,7 +11,7 @@ This is basically the opposite of the first feature. It forces deluge to create 
 
 download from:
 
-https://github.com/KennyWuLee/nofolder/releases
+https://github.com/stansters/nofolder/releases
 
 # build
 
