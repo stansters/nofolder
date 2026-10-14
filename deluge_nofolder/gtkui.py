@@ -53,21 +53,34 @@ import deluge.common
 
 from .common import get_resource
 
+
+def _get_client_api():
+    plugin_client = getattr(client, "nofolder", None)
+    if plugin_client is None:
+        plugin_client = getattr(client, "deluge_nofolder", None)
+    return plugin_client
+
+
 class GtkUI(GtkPluginBase):
     def enable(self):
         if Gtk is None:
             raise RuntimeError("NoFolder requires GTK 3 for Deluge 2.x")
         self.builder = Gtk.Builder()
         self.builder.add_from_file(get_resource("config.glade"))
+        self.preferences = component.get("Preferences")
+        self.plugin_manager = component.get("PluginManager")
+        self._page_widget = self.builder.get_object("prefs_box")
 
-        component.get("Preferences").add_page("NoFolder", self.builder.get_object("prefs_box"))
-        component.get("PluginManager").register_hook("on_apply_prefs", self.on_apply_prefs)
-        component.get("PluginManager").register_hook("on_show_prefs", self.on_show_prefs)
+        self.preferences.add_page("NoFolder", self._page_widget)
+        self.plugin_manager.register_hook("on_apply_prefs", self.on_apply_prefs)
+        self.plugin_manager.register_hook("on_show_prefs", self.on_show_prefs)
 
     def disable(self):
-        component.get("Preferences").remove_page("NoFolder")
-        component.get("PluginManager").deregister_hook("on_apply_prefs", self.on_apply_prefs)
-        component.get("PluginManager").deregister_hook("on_show_prefs", self.on_show_prefs)
+        if hasattr(self, "preferences"):
+            self.preferences.remove_page("NoFolder")
+        if hasattr(self, "plugin_manager"):
+            self.plugin_manager.deregister_hook("on_apply_prefs", self.on_apply_prefs)
+            self.plugin_manager.deregister_hook("on_show_prefs", self.on_show_prefs)
 
     def on_apply_prefs(self):
         log.debug("applying prefs for NoFolder")
@@ -75,12 +88,16 @@ class GtkUI(GtkPluginBase):
             "dontaddfolder": self.builder.get_object("dontaddfolder_checkbutton").get_active(),
             "createfolder": self.builder.get_object("createfolder_checkbutton").get_active()
         }
-        client.nofolder.set_config(config)
+        plugin_client = _get_client_api()
+        if plugin_client is not None:
+            plugin_client.set_config(config)
 
     def on_show_prefs(self):
-        client.nofolder.get_config().addCallback(self.cb_get_config)
+        plugin_client = _get_client_api()
+        if plugin_client is not None:
+            plugin_client.get_config().addCallback(self.cb_get_config)
 
     def cb_get_config(self, config):
         "callback for on show_prefs"
-        self.builder.get_object("dontaddfolder_checkbutton").set_active(config["dontaddfolder"])
-        self.builder.get_object("createfolder_checkbutton").set_active(config["createfolder"])
+        self.builder.get_object("dontaddfolder_checkbutton").set_active(bool(config.get("dontaddfolder", False)))
+        self.builder.get_object("createfolder_checkbutton").set_active(bool(config.get("createfolder", False)))
