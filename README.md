@@ -1,5 +1,5 @@
 # nofolder
-Deluge plugin
+Deluge 2.x plugin
 
 This plugin has two functionalities:
 
@@ -13,13 +13,31 @@ download from:
 
 https://github.com/stansters/nofolder/releases
 
-# build
+## Deluge 2.x usage
 
-This fork targets Deluge 2.x on Python 3 (including Python 3.12).
+This fork targets Deluge 2.x on Python 3.
 
-Build the plugin egg with:
+### Build and install
+
+Build the plugin egg:
 
 `python3 setup.py bdist_egg`
+
+The built egg is created in `dist/`. Copy the `.egg` file into your Deluge plugin directory and restart Deluge.
+
+### Enable and configure
+
+1. Enable **NoFolder** in Deluge Plugins.
+2. In the GTK desktop client, open **Preferences -> Plugins -> NoFolder**.
+3. Configure:
+   - **Don't add torrentname to path** (`dontaddfolder`)
+   - **Create folder for single files** (`createfolder`)
+
+Safe defaults are enabled for Deluge 2.x compatibility: both options are `False` until you explicitly turn them on.
+
+### Web UI
+
+The web plugin now provides a **NoFolder** preferences page integrated into Deluge Web preferences for the same two settings.
 
 # forum
 http://forum.deluge-torrent.org/viewtopic.php?f=9&t=51839

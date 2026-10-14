@@ -40,6 +40,7 @@
 from setuptools import setup
 
 __plugin_name__ = "NoFolder"
+__package_name__ = "deluge_nofolder"
 __author__ = "KennyWuLee"
 __author_email__ = "krischer.till@gmail.com"
 __version__ = "0.2"
@@ -47,7 +48,7 @@ __url__ = ""
 __license__ = "GPLv3"
 __description__ = ""
 __long_description__ = """"""
-__pkg_data__ = {__plugin_name__.lower(): ["template/*", "data/*"]}
+__pkg_data__ = {__package_name__: ["template/*", "data/*"]}
 
 setup(
     name=__plugin_name__,
@@ -59,7 +60,7 @@ setup(
     license=__license__,
     long_description=__long_description__ if __long_description__ else __description__,
 
-    packages=[__plugin_name__.lower()],
+    packages=[__package_name__],
     package_data = __pkg_data__,
     python_requires=">=3.8",
 
@@ -70,7 +71,7 @@ setup(
     %s = %s:GtkUIPlugin
     [deluge.plugin.gtk3ui]
     %s = %s:Gtk3UIPlugin
-    [deluge.plugin.web]
+    [deluge.plugin.webui]
     %s = %s:WebUIPlugin
-    """ % ((__plugin_name__, __plugin_name__.lower())*4)
+    """ % ((__plugin_name__, __package_name__)*4)
 )

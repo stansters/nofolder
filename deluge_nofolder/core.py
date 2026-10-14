@@ -56,10 +56,12 @@ class Core(CorePluginBase):
         core = component.get("Core")
         self.torrent_manager = component.get("TorrentManager")
         self.torrents = core.torrentmanager.torrents
-        component.get("EventManager").register_event_handler("TorrentAddedEvent", self.post_torrent_add)
+        self.event_manager = component.get("EventManager")
+        self.event_manager.register_event_handler("TorrentAddedEvent", self.post_torrent_add)
 
     def disable(self):
-        pass
+        if hasattr(self, "event_manager"):
+            self.event_manager.deregister_event_handler("TorrentAddedEvent", self.post_torrent_add)
 
     def update(self):
         pass
@@ -68,11 +70,13 @@ class Core(CorePluginBase):
         #if not self.torrent_manager.session_started or (not (self.config['dontaddfolder'] or self.config['createfolder'])):
         if not (self.config['dontaddfolder'] or self.config['createfolder']):
             return
-        torrent = self.torrents[torrent_id]
+        torrent = self.torrents.get(torrent_id)
+        if torrent is None:
+            return
         torrent.pause()
         status_keys = ["files", "save_path", "name"]
         status = torrent.get_status(status_keys)
-        if not status["files"]:
+        if not status or not status.get("files"):
             torrent.resume()
             return
         if self.config['dontaddfolder'] and re.match('.*/.*', status["files"][0]["path"]):
