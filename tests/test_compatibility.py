@@ -90,16 +90,19 @@ def install_gtk_stubs():
             self.active = bool(value)
 
     class BuilderStub:
-        def __init__(self):
+        def __init__(self, path=None):
             self.loaded_files = []
+            if path is not None:
+                self.loaded_files.append(path)
             self.objects = {
                 "prefs_box": object(),
                 "dontaddfolder_checkbutton": WidgetStub(),
                 "createfolder_checkbutton": WidgetStub(),
             }
 
-        def add_from_file(self, path):
-            self.loaded_files.append(path)
+        @classmethod
+        def new_from_file(cls, path):
+            return cls(path=path)
 
         def get_object(self, name):
             return self.objects[name]
@@ -134,12 +137,17 @@ class CompatibilityTests(unittest.TestCase):
     def test_get_resource_returns_existing_data_path(self):
         from deluge_nofolder.common import get_resource
 
-        config_path = get_resource("config.glade")
+        config_path = get_resource("config.ui")
         self.assertTrue(os.path.isabs(config_path))
         self.assertTrue(os.path.exists(config_path))
         self.assertTrue(
             config_path.endswith(
-                os.path.join("deluge_nofolder", "data", "config.glade")
+                os.path.join("deluge_nofolder", "data", "config.ui")
+            )
+        )
+        self.assertFalse(
+            os.path.exists(
+                os.path.join(REPO_ROOT, "deluge_nofolder", "data", "config.glade")
             )
         )
 
@@ -148,7 +156,7 @@ class CompatibilityTests(unittest.TestCase):
 
         self.assertEqual(CorePlugin("NoFolder")._plugin_cls.__name__, "Core")
         self.assertEqual(GtkUIPlugin("NoFolder")._plugin_cls.__name__, "GtkUI")
-        self.assertEqual(Gtk3UIPlugin("NoFolder")._plugin_cls.__name__, "GtkUI")
+        self.assertEqual(Gtk3UIPlugin("NoFolder")._plugin_cls.__name__, "Gtk3UI")
         self.assertEqual(WebUIPlugin("NoFolder")._plugin_cls.__name__, "WebUI")
 
     def test_setup_registers_namespaced_entry_points(self):
@@ -159,7 +167,7 @@ class CompatibilityTests(unittest.TestCase):
         self.assertIn('__package_name__ = "deluge_nofolder"', content)
         self.assertIn("[deluge.plugin.core]", content)
         self.assertIn("[deluge.plugin.gtk3ui]", content)
-        self.assertIn("[deluge.plugin.web]", content)
+        self.assertIn("[deluge.plugin.webui]", content)
         self.assertIn("[deluge.plugin.gtkui]", content)
 
     def test_default_preferences_are_safe(self):
@@ -230,8 +238,8 @@ class CompatibilityTests(unittest.TestCase):
         self.assertTrue(core.torrents["abc123"].paused)
         self.assertTrue(core.torrents["abc123"].resumed)
 
-    def test_gtk_preferences_lifecycle(self):
-        from deluge_nofolder import gtkui
+    def test_gtk3_preferences_lifecycle(self):
+        from deluge_nofolder import gtk3ui, gtkprefs
 
         class DeferredStub:
             def __init__(self, result):
@@ -275,21 +283,26 @@ class CompatibilityTests(unittest.TestCase):
                 self.deregistered.append((hook, callback.__name__))
 
         plugin_client = PluginClientStub()
-        gtkui.client = types.SimpleNamespace(nofolder=plugin_client)
+        gtkprefs.client = types.SimpleNamespace(deluge_nofolder=plugin_client)
 
         prefs = PreferencesStub()
         plugin_manager = PluginManagerStub()
-        gtkui.component = types.SimpleNamespace(
+        gtkprefs.component = types.SimpleNamespace(
             get=lambda name: {
                 "Preferences": prefs,
                 "PluginManager": plugin_manager,
             }[name]
         )
 
-        plugin = gtkui.GtkUI()
+        plugin = gtk3ui.Gtk3UI()
         plugin.enable()
 
         self.assertEqual(prefs.added[0][0], "NoFolder")
+        self.assertTrue(
+            plugin.builder.loaded_files[0].endswith(
+                os.path.join("deluge_nofolder", "data", "config.ui")
+            )
+        )
         self.assertEqual(
             {hook for hook, _ in plugin_manager.registered},
             {"on_apply_prefs", "on_show_prefs"},
@@ -322,7 +335,7 @@ class CompatibilityTests(unittest.TestCase):
     def test_gtk_ui_xml_is_well_formed(self):
         from deluge_nofolder.common import get_resource
 
-        ET.parse(get_resource("config.glade"))
+        ET.parse(get_resource("config.ui"))
 
     def test_web_ui_script_includes_preferences_page(self):
         from deluge_nofolder.common import get_resource
